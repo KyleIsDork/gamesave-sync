@@ -17,7 +17,20 @@ from platformdirs import user_config_dir, user_data_dir
 
 from . import APP_SLUG
 
-_TOKEN_RE = re.compile(r"\{([A-Z_][A-Z0-9_]*)\}")
+# Tokens are either plain ({HOME}) or parameterised ({STEAM_COMPAT:3146520}).
+_TOKEN_RE = re.compile(r"\{([A-Z_][A-Z0-9_]*)(?::([^}]*))?\}")
+
+# Steam library paths vary per machine, so a game on a secondary drive cannot be
+# expressed with a fixed root. These resolve by asking Steam where the game
+# actually is, which is what makes such a profile portable across machines.
+_STEAM_COMPAT = "STEAM_COMPAT"
+_STEAM_APP = "STEAM_APP"
+
+_COMPAT_RE = re.compile(
+    r"(?P<lib>.*)[/\\]steamapps[/\\]compatdata[/\\](?P<appid>\d+)"
+    r"[/\\]pfx[/\\]drive_c[/\\]users[/\\]steamuser(?P<tail>.*)",
+    re.IGNORECASE,
+)
 
 
 def config_dir() -> Path:
@@ -100,12 +113,30 @@ def token_map() -> dict[str, Path]:
     return m
 
 
+def _resolve_parameterised(name: str, argument: str) -> str | None:
+    """Resolve a token that takes an argument, e.g. {STEAM_COMPAT:3146520}."""
+    # Imported lazily: steam.py touches the filesystem, and most paths never
+    # need it.
+    from . import steam
+
+    if name == _STEAM_COMPAT:
+        prefix = steam.compat_prefix_for(argument)
+        return str(prefix) if prefix else None
+    if name == _STEAM_APP:
+        game = steam.find_by_appid(argument)
+        return str(game.install_path) if game else None
+    return None
+
+
 def expand(path_str: str) -> Path:
     """Turn ``{HOME}/.config/foo`` into a real absolute path."""
     tokens = token_map()
 
     def sub(match: re.Match[str]) -> str:
-        name = match.group(1)
+        name, argument = match.group(1), match.group(2)
+        if argument is not None:
+            resolved = _resolve_parameterised(name, argument)
+            return resolved if resolved else match.group(0)
         if name in tokens:
             return str(tokens[name])
         env = os.environ.get(name)
@@ -124,6 +155,14 @@ def tokenize(path: Path | str) -> str:
         p = p.resolve(strict=False)
     except OSError:
         pass
+
+    # A Steam Proton prefix first: its library folder is machine specific, so a
+    # fixed root would not survive being synced to another computer.
+    compat = _COMPAT_RE.match(p.as_posix())
+    if compat:
+        tail = compat.group("tail").replace("\\", "/").strip("/")
+        token = f"{{{_STEAM_COMPAT}:{compat.group('appid')}}}"
+        return f"{token}/{tail}" if tail else token
 
     best_name: str | None = None
     best_len = -1

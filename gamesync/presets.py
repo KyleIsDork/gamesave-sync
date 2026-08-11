@@ -18,14 +18,33 @@ class Preset:
     paths: dict[str, list[str]]  # platform -> tokenized paths
     kind: str = "dir"
     excludes: list[str] = field(default_factory=list)
+    steam_appid: str = ""
 
     def paths_for_platform(self, platform_name: str | None = None) -> list[str]:
         return self.paths.get(platform_name or current_platform(), [])
 
 
-# Steam's Proton prefix layout on Linux, where <appid> varies per game.
 def _proton(appid: str, tail: str) -> str:
-    return f"{{STEAM}}/steamapps/compatdata/{appid}/pfx/drive_c/users/steamuser/{tail}"
+    """A path inside a game's Proton prefix.
+
+    Uses the parameterised {STEAM_COMPAT:<appid>} token rather than a fixed
+    Steam root, so it resolves even when the game is installed to a library on
+    a second drive.
+    """
+    return f"{{STEAM_COMPAT:{appid}}}/{tail}"
+
+
+def _godot(name: str, appid: str = "") -> dict[str, list[str]]:
+    """Save paths for a Godot game, which stores under app_userdata/<name>."""
+    paths = {
+        "windows": [f"{{APPDATA}}/Godot/app_userdata/{name}"],
+        "macos": [f"{{APP_SUPPORT}}/Godot/app_userdata/{name}"],
+        "linux": [f"{{XDG_DATA_HOME}}/godot/app_userdata/{name}"],
+    }
+    if appid:
+        # Played through Proton, the Windows layout applies inside the prefix.
+        paths["linux"].append(_proton(appid, f"AppData/Roaming/Godot/app_userdata/{name}"))
+    return paths
 
 
 PRESETS: list[Preset] = [
@@ -160,6 +179,11 @@ PRESETS: list[Preset] = [
             "macos": ["{HOME}/Library/Application Support/Steam/steamapps/common/SlayTheSpire/saves"],
             "linux": ["{STEAM}/steamapps/common/SlayTheSpire/saves"],
         },
+    ),
+    Preset(
+        "WEBFISHING",
+        _godot("webfishing_2_newver", appid="3146520"),
+        steam_appid="3146520",
     ),
     Preset(
         "Risk of Rain 2",

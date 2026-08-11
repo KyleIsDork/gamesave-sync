@@ -161,6 +161,8 @@ class AppConfig:
     auto_backup: bool = True
     default_interval_minutes: int = 30
     backup_on_launch: bool = False
+    minimize_to_tray: bool = True
+    start_at_login: bool = False
     games: list[GameProfile] = field(default_factory=list)
 
     def game_by_slug(self, slug: str) -> GameProfile | None:
@@ -186,6 +188,8 @@ class AppConfig:
             "auto_backup": self.auto_backup,
             "default_interval_minutes": self.default_interval_minutes,
             "backup_on_launch": self.backup_on_launch,
+            "minimize_to_tray": self.minimize_to_tray,
+            "start_at_login": self.start_at_login,
             "games": [g.to_dict() for g in self.games],
         }
 
@@ -199,5 +203,7 @@ class AppConfig:
             auto_backup=bool(data.get("auto_backup", True)),
             default_interval_minutes=int(data.get("default_interval_minutes", 30)),
             backup_on_launch=bool(data.get("backup_on_launch", False)),
+            minimize_to_tray=bool(data.get("minimize_to_tray", True)),
+            start_at_login=bool(data.get("start_at_login", False)),
             games=[GameProfile.from_dict(g) for g in data.get("games", [])],
         )
