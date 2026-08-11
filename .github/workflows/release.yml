@@ -19,8 +19,8 @@ jobs:
     # will refuse to start on older ones.
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
           cache: pip
@@ -50,7 +50,7 @@ jobs:
           kill -0 $PID || { wait $PID; exit 1; }
           kill $PID
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: linux-appimage
           path: dist/*.AppImage
@@ -60,8 +60,8 @@ jobs:
     name: Windows
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
           cache: pip
@@ -78,7 +78,7 @@ jobs:
           $version = (Select-String -Path gamesync/__init__.py -Pattern 'VERSION = "(.+)"').Matches.Groups[1].Value
           Compress-Archive -Path "dist/GameSave Sync/*" -DestinationPath "dist/GameSave-Sync-$version-windows-x64.zip"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: windows-build
           path: dist/*.zip
@@ -96,8 +96,8 @@ jobs:
           - runner: macos-13      # Intel
             arch: x86_64
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
           cache: pip
@@ -117,7 +117,7 @@ jobs:
           ditto -c -k --sequesterRsrc --keepParent \
             "GameSave Sync.app" "GameSave-Sync-$VERSION-macos-${{ matrix.arch }}.zip"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: macos-build-${{ matrix.arch }}
           path: dist/*.zip
@@ -129,9 +129,9 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           path: artifacts
           merge-multiple: true
@@ -140,7 +140,7 @@ jobs:
         run: ls -lhR artifacts
 
       - name: Publish
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: artifacts/*
           generate_release_notes: true
