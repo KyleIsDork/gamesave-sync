@@ -1,0 +1,60 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gamesave-sync"
+version = "0.1.0"
+description = "Back up game save files to a private GitHub repository, automatically."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "KyleIsDork" }]
+keywords = ["games", "saves", "backup", "github", "sync", "cloud-save"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: X11 Applications :: Qt",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Games/Entertainment",
+    "Topic :: System :: Archiving :: Backup",
+]
+
+dependencies = [
+    "PySide6>=6.6",
+    "requests>=2.31",
+    "platformdirs>=4.0",
+    "keyring>=24.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pyflakes>=3.0",
+]
+build = [
+    "pyinstaller>=6.3",
+]
+
+[project.urls]
+Homepage = "https://github.com/KyleIsDork/gamesave-sync"
+Repository = "https://github.com/KyleIsDork/gamesave-sync"
+Issues = "https://github.com/KyleIsDork/gamesave-sync/issues"
+Changelog = "https://github.com/KyleIsDork/gamesave-sync/blob/main/CHANGELOG.md"
+
+[project.gui-scripts]
+gamesave-sync = "gamesync.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["gamesync*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+filterwarnings = ["error::DeprecationWarning:gamesync.*"]
