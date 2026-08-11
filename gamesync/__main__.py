@@ -15,6 +15,10 @@ from .ui.theme import stylesheet
 
 
 def main() -> int:
+    # Started by the login autostart entry: come up hidden in the tray rather
+    # than throwing a window at the user every time they log in.
+    background = "--background" in sys.argv
+
     app = QApplication(sys.argv)
     app.setApplicationName(APP_NAME)
     app.setApplicationDisplayName(APP_NAME)
@@ -34,7 +38,7 @@ def main() -> int:
     token = load_token()
     if token and config.repo_owner:
         client = GitHubClient(token)
-    else:
+    elif not background:
         dialog = ConnectDialog(config)
         dialog.setStyleSheet(stylesheet(config.theme))
         if dialog.exec() == QDialog.DialogCode.Accepted:
@@ -43,7 +47,14 @@ def main() -> int:
         # Declining just opens the app unconnected; Settings can connect later.
 
     window = MainWindow(config, client)
-    window.show()
+
+    if background and window.tray is not None:
+        # Quitting the last window must not end the process while we live in
+        # the tray with no window shown.
+        app.setQuitOnLastWindowClosed(False)
+    else:
+        window.show()
+
     return app.exec()
 
 

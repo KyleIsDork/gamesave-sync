@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Background operation: a system tray icon with open, back up now, pause and
+  quit. Closing the window now hides to the tray and backups keep running.
+  Sessions with no tray fall back to closing meaning quit.
+- Start at login, on all three platforms, via an XDG autostart entry, a
+  LaunchAgent, or the Windows Run key. Started this way the app comes up hidden
+  with `--background`.
+- Steam library discovery by reading `steamapps/libraryfolders.vdf` and
+  `appmanifest_*.acf`. Games installed to a library on a second drive are now
+  found, where previously only a default install path was guessed.
+- Parameterised path tokens `{STEAM_COMPAT:<appid>}` and `{STEAM_APP:<appid>}`,
+  which resolve through Steam rather than a fixed root. A Proton game's save
+  path is now portable between machines that keep their libraries in different
+  places.
+- WEBFISHING preset, both native and through Proton.
+
+### Fixed
+
+- Buttons that open a browser or file manager failed silently. The return value
+  of `QDesktopServices.openUrl` was ignored, so "Open repo on GitHub", the token
+  page link, and "Open folder" could do nothing at all with no feedback. They now
+  fall back to the platform launcher and then to `webbrowser`, and report the
+  address if every method fails.
+- The AppImage `AppRun` exported `LD_LIBRARY_PATH` and `QT_PLUGIN_PATH` pointing
+  at a `usr/lib` directory that does not exist in the AppDir. Besides being
+  useless, exporting them leaked the bundle's loader paths into any program the
+  app launched.
+
 ## [0.1.0] - 2026-08-11
 
 First release.
