@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-from PySide6.QtCore import Qt, QUrl
-from PySide6.QtGui import QDesktopServices
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QDialog,
     QHBoxLayout,
@@ -19,6 +18,7 @@ from ..github import TOKEN_SCOPE_URL, AuthError, GitHubClient, GitHubError
 from ..models import AppConfig
 from ..store import save_token, token_storage_is_secure
 from ..sync import SyncEngine
+from .links import open_url
 from .widgets import Card, Divider, Spinner
 
 
@@ -68,9 +68,7 @@ class ConnectDialog(QDialog):
         open_button = QPushButton("Open GitHub token page")
         open_button.setObjectName("LinkButton")
         open_button.setCursor(Qt.CursorShape.PointingHandCursor)
-        open_button.clicked.connect(
-            lambda: QDesktopServices.openUrl(QUrl(TOKEN_SCOPE_URL))
-        )
+        open_button.clicked.connect(self._open_token_page)
 
         step_two = QLabel("<b>2.</b>&nbsp; Paste it below.")
         step_two.setWordWrap(True)
@@ -125,6 +123,13 @@ class ConnectDialog(QDialog):
         buttons.addWidget(cancel)
         buttons.addWidget(self.connect_button)
         root.addLayout(buttons)
+
+    def _open_token_page(self) -> None:
+        if not open_url(TOKEN_SCOPE_URL):
+            self.status.setText(
+                "Could not open a browser. Create a token with the 'repo' scope at:\n"
+                f"{TOKEN_SCOPE_URL}"
+            )
 
     def _set_busy(self, busy: bool, message: str = "") -> None:
         self.connect_button.setEnabled(not busy)

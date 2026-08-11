@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import sys
 from datetime import timedelta
+from pathlib import Path
 
-from PySide6.QtCore import Qt, QTimer, QUrl
-from PySide6.QtGui import QDesktopServices
+from PySide6.QtCore import Qt, QTimer
+from PySide6.QtGui import QAction, QIcon, QPixmap
 from PySide6.QtWidgets import (
+    QApplication,
     QButtonGroup,
     QCheckBox,
     QComboBox,
@@ -19,11 +22,15 @@ from PySide6.QtWidgets import (
     QPushButton,
     QScrollArea,
     QStackedWidget,
+    QSystemTrayIcon,
+    QMenu,
     QVBoxLayout,
     QWidget,
 )
 
 from .. import APP_NAME, VERSION
+from ..autostart import is_enabled as autostart_is_enabled
+from ..autostart import set_enabled as autostart_set_enabled
 from ..github import GitHubClient
 from ..models import AppConfig, GameProfile
 from ..paths import safety_dir
@@ -34,6 +41,7 @@ from ..worker import Job, JobRunner
 from .game_card import GameCard
 from .game_editor import GameEditorDialog
 from .history import HistoryDialog
+from .links import open_folder, open_url
 from .onboarding import ConnectDialog
 from .theme import stylesheet
 from .widgets import Card, Divider, EmptyState, Toast
@@ -77,6 +85,11 @@ class MainWindow(QMainWindow):
             self.log_activity(
                 "Token stored in a file, no system keychain was available.", "warn"
             )
+
+        self._force_quit = False
+        self._tray_hint_shown = False
+        self.tray: QSystemTrayIcon | None = None
+        self._setup_tray()
 
         if self.config.backup_on_launch and self.client:
             QTimer.singleShot(1500, lambda: self.backup_all(silent=True))
@@ -298,6 +311,30 @@ class MainWindow(QMainWindow):
         backup_layout.addWidget(self.launch_check)
 
         backup_layout.addWidget(Divider())
+
+        background_title = QLabel("Running in the background")
+        background_title.setObjectName("SectionTitle")
+        backup_layout.addWidget(background_title)
+
+        self.tray_check = QCheckBox("Keep running in the tray when I close the window")
+        self.tray_check.setChecked(self.config.minimize_to_tray)
+        self.tray_check.toggled.connect(self._set_minimize_to_tray)
+        backup_layout.addWidget(self.tray_check)
+
+        self.login_check = QCheckBox("Start GameSave Sync when I log in")
+        # Read the real state rather than trusting config: the user may have
+        # removed the entry outside the app.
+        self.config.start_at_login = autostart_is_enabled()
+        self.login_check.setChecked(self.config.start_at_login)
+        self.login_check.toggled.connect(self._set_start_at_login)
+        backup_layout.addWidget(self.login_check)
+
+        self.background_hint = QLabel("")
+        self.background_hint.setObjectName("Hint")
+        self.background_hint.setWordWrap(True)
+        backup_layout.addWidget(self.background_hint)
+
+        backup_layout.addWidget(Divider())
         note = QLabel(
             "A backup only creates a commit when a save file actually changed, "
             "so idle games cost nothing."
@@ -312,9 +349,7 @@ class MainWindow(QMainWindow):
         open_safety = QPushButton("Open folder")
         open_safety.setObjectName("LinkButton")
         open_safety.setCursor(Qt.CursorShape.PointingHandCursor)
-        open_safety.clicked.connect(
-            lambda: QDesktopServices.openUrl(QUrl.fromLocalFile(str(safety_dir())))
-        )
+        open_safety.clicked.connect(self.open_safety_folder)
         safety_row.addWidget(safety_label)
         safety_row.addWidget(open_safety)
         safety_row.addStretch(1)
@@ -723,7 +758,106 @@ class MainWindow(QMainWindow):
             self.show_toast("Connect an account first.", "warn")
             return
         url = f"https://github.com/{self.config.repo_owner}/{self.config.repo_name}"
-        QDesktopServices.openUrl(QUrl(url))
+        if not open_url(url):
+            # Never fail silently: show the address so it can be copied.
+            self.show_toast(f"Could not open a browser. The repo is at {url}", "warn", msec=9000)
+            self.log_activity(f"Could not open a browser for {url}", "warn")
+
+    def open_safety_folder(self) -> None:
+        folder = safety_dir()
+        if not open_folder(folder):
+            self.show_toast(f"Could not open a file manager. Folder: {folder}", "warn", msec=9000)
+            self.log_activity(f"Could not open a file manager for {folder}", "warn")
+
+    # ---- system tray -----------------------------------------------------
+
+    def app_icon(self) -> QIcon:
+        """The window and tray icon, loaded from the bundle or the source tree."""
+        for base in (
+            Path(getattr(sys, "_MEIPASS", "")) / "assets" if getattr(sys, "_MEIPASS", "") else None,
+            Path(__file__).resolve().parent.parent.parent / "assets",
+        ):
+            if base and (base / "icon.png").exists():
+                return QIcon(str(base / "icon.png"))
+        # Fall back to a plain coloured square rather than showing nothing.
+        pixmap = QPixmap(64, 64)
+        pixmap.fill(Qt.GlobalColor.transparent)
+        return QIcon(pixmap)
+
+    def _setup_tray(self) -> None:
+        icon = self.app_icon()
+        self.setWindowIcon(icon)
+
+        if not QSystemTrayIcon.isSystemTrayAvailable():
+            # Some minimal Linux sessions have no tray. Closing must then quit,
+            # or the app would become unreachable.
+            self.log_activity("No system tray available, closing will quit the app.")
+            return
+
+        self.tray = QSystemTrayIcon(icon, self)
+        self.tray.setToolTip(APP_NAME)
+
+        menu = QMenu()
+        self._tray_open = QAction("Open GameSave Sync", self)
+        self._tray_open.triggered.connect(self.show_from_tray)
+        self._tray_backup = QAction("Back up all now", self)
+        self._tray_backup.triggered.connect(lambda: self.backup_all())
+        self._tray_pause = QAction("Pause automatic backups", self)
+        self._tray_pause.triggered.connect(self._toggle_auto_from_tray)
+        quit_action = QAction("Quit", self)
+        quit_action.triggered.connect(self.quit_application)
+
+        menu.addAction(self._tray_open)
+        menu.addSeparator()
+        menu.addAction(self._tray_backup)
+        menu.addAction(self._tray_pause)
+        menu.addSeparator()
+        menu.addAction(quit_action)
+
+        self.tray.setContextMenu(menu)
+        self.tray.activated.connect(self._tray_activated)
+        self.tray.show()
+        self._refresh_tray()
+
+        # With a tray, hiding the window must not end the process. Quitting is
+        # explicit from here on, via quit_application.
+        application = QApplication.instance()
+        if application is not None:
+            application.setQuitOnLastWindowClosed(False)
+
+    def _tray_activated(self, reason) -> None:
+        if reason in (
+            QSystemTrayIcon.ActivationReason.Trigger,
+            QSystemTrayIcon.ActivationReason.DoubleClick,
+        ):
+            self.show_from_tray()
+
+    def show_from_tray(self) -> None:
+        self.showNormal()
+        self.raise_()
+        self.activateWindow()
+
+    def _toggle_auto_from_tray(self) -> None:
+        self.auto_check.setChecked(not self.config.auto_backup)
+
+    def _refresh_tray(self) -> None:
+        if not self.tray:
+            return
+        paused = not self.config.auto_backup
+        self._tray_pause.setText(
+            "Resume automatic backups" if paused else "Pause automatic backups"
+        )
+        games = len([g for g in self.config.games if g.enabled])
+        state = "paused" if paused else f"{games} game(s) scheduled"
+        self.tray.setToolTip(f"{APP_NAME}\n{state}")
+
+    def quit_application(self) -> None:
+        """Really exit, as opposed to hiding to the tray."""
+        self._force_quit = True
+        self.close()
+        application = QApplication.instance()
+        if application is not None:
+            application.quit()
 
     # ---- misc ------------------------------------------------------------
 
@@ -731,10 +865,36 @@ class MainWindow(QMainWindow):
         self.config.auto_backup = value
         self._save()
         self._update_sync_status()
+        self._refresh_tray()
 
     def _set_backup_on_launch(self, value: bool) -> None:
         self.config.backup_on_launch = value
         self._save()
+
+    def _set_minimize_to_tray(self, value: bool) -> None:
+        self.config.minimize_to_tray = value
+        self._save()
+        if value and not self.tray:
+            self.background_hint.setText(
+                "This session has no system tray, so closing the window will quit."
+            )
+        else:
+            self.background_hint.setText("")
+
+    def _set_start_at_login(self, value: bool) -> None:
+        ok, message = autostart_set_enabled(value)
+        if ok:
+            self.config.start_at_login = value
+            self._save()
+            self.background_hint.setText(message)
+            self.log_activity(message)
+        else:
+            # Put the checkbox back where it was, the change did not take.
+            blocked = self.login_check.blockSignals(True)
+            self.login_check.setChecked(not value)
+            self.login_check.blockSignals(blocked)
+            self.background_hint.setText(message)
+            self.log_activity(message, "warn")
 
     def _update_sync_status(self) -> None:
         pending = self.runner.pending_count()
@@ -776,7 +936,25 @@ class MainWindow(QMainWindow):
             self.toast._reposition()
 
     def closeEvent(self, event) -> None:  # noqa: N802 - Qt naming
+        # Closing the window keeps backups running in the tray, which is the
+        # whole point of the tray. Quit is explicit, via the tray menu.
+        if self.tray and self.config.minimize_to_tray and not self._force_quit:
+            event.ignore()
+            self.hide()
+            if not self._tray_hint_shown:
+                self.tray.showMessage(
+                    APP_NAME,
+                    "Still running in the tray, backups continue. "
+                    "Use Quit in the tray menu to exit.",
+                    self.app_icon(),
+                    5000,
+                )
+                self._tray_hint_shown = True
+            return
+
         self.scheduler.stop()
         self._save()
         self.runner.shutdown()
+        if self.tray:
+            self.tray.hide()
         super().closeEvent(event)

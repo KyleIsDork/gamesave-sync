@@ -1,15 +1,17 @@
 #!/bin/sh
-# AppImage entry point. Resolves the bundle root, then execs the PyInstaller
-# binary with the bundled Qt libraries taking precedence.
+# AppImage entry point.
+#
+# PyInstaller's bootloader sets up its own library paths from usr/bin/_internal,
+# so this deliberately does NOT export LD_LIBRARY_PATH or QT_PLUGIN_PATH. An
+# earlier version pointed them at usr/lib, which does not exist in this AppDir,
+# and exporting them would leak into any browser or file manager the app
+# launches, which is what made "Open repo on GitHub" fail silently.
 HERE="$(dirname "$(readlink -f "${0}")")"
 
-export LD_LIBRARY_PATH="${HERE}/usr/lib:${LD_LIBRARY_PATH}"
-export QT_PLUGIN_PATH="${HERE}/usr/lib/PySide6/Qt/plugins:${QT_PLUGIN_PATH}"
-
-# Wayland sessions occasionally lack the Qt Wayland plugin; fall back to XCB
+# Wayland sessions occasionally lack the Qt Wayland plugin. Fall back to XCB
 # rather than failing to start with no message.
 if [ -z "${QT_QPA_PLATFORM}" ] && [ -n "${WAYLAND_DISPLAY}" ]; then
-    if [ ! -e "${HERE}/usr/lib/PySide6/Qt/plugins/platforms/libqwayland-generic.so" ]; then
+    if [ ! -e "${HERE}/usr/bin/_internal/PySide6/Qt/plugins/platforms/libqwayland-generic.so" ]; then
         export QT_QPA_PLATFORM=xcb
     fi
 fi
