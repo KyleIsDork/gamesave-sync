@@ -5,7 +5,7 @@
 #
 # Output: dist/GameSave-Sync-x86_64.AppImage
 #
-# Build on the OLDEST glibc you intend to support — an AppImage built on a new
+# Build on the OLDEST glibc you intend to support, an AppImage built on a new
 # distro will not run on older ones. CI uses ubuntu-22.04 for this reason.
 set -euo pipefail
 

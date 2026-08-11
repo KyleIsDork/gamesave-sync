@@ -114,7 +114,7 @@ class SyncEngine:
             )
             self.client.update_ref(self.owner, self.repo, self.branch, new_commit)
         except GitHubError:
-            # Cosmetic only — never fail a setup over the README.
+            # Cosmetic only, never fail a setup over the README.
             pass
 
     # ---- backup ---------------------------------------------------------
@@ -171,7 +171,7 @@ class SyncEngine:
             return BackupResult(
                 changed=False,
                 commit_sha=head,
-                message="Already up to date — no save changes since the last backup.",
+                message="Already up to date, no save changes since the last backup.",
                 warnings=snapshot.warnings,
             )
 
@@ -221,7 +221,7 @@ class SyncEngine:
             # Another machine committed between our read and write. Rebuild
             # against the new head once; a second failure is a real problem.
             if _attempt == 0 and exc.status in (409, 422):
-                report(90, "Another device pushed first — retrying…")
+                report(90, "Another device pushed first, retrying…")
                 return self.backup(profile, progress, _attempt=1)
             raise
 
@@ -232,7 +232,7 @@ class SyncEngine:
         profile.last_error = ""
 
         if only_metadata:
-            summary = "Saved settings — no save-file changes"
+            summary = "Saved settings, no save-file changes"
         elif changed:
             summary = (
                 f"Backed up {len(changed)} file{'s' if len(changed) != 1 else ''}"
@@ -335,7 +335,7 @@ class SyncEngine:
             rel = entry.path[len(prefix) :]
             target, reason = resolve_restore_target(profile, rel)
             if target is None:
-                warnings.append(f"Skipped {rel} — {reason}.")
+                warnings.append(f"Skipped {rel}: {reason}.")
                 continue
             planned.append((target, entry.sha or ""))
 

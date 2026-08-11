@@ -6,7 +6,7 @@
 
 **Automatic backups of your game saves, to a private GitHub repo you own.**
 
-For the games that never got cloud saves — or got bad ones.
+For the games that never got cloud saves, or got bad ones.
 
 [![CI](https://github.com/KyleIsDork/gamesave-sync/actions/workflows/ci.yml/badge.svg)](https://github.com/KyleIsDork/gamesave-sync/actions/workflows/ci.yml)
 [![Release](https://github.com/KyleIsDork/gamesave-sync/actions/workflows/release.yml/badge.svg)](https://github.com/KyleIsDork/gamesave-sync/actions/workflows/release.yml)
@@ -35,14 +35,14 @@ Nothing is sent anywhere else.
 
 ## Features
 
-- **Automatic scheduled backups** — per game, from every 5 minutes to daily
-- **Full version history** — every backup is a commit; restore any previous one
-- **Genuinely incremental** — unchanged saves upload nothing and create no commit
-- **Restore with a safety net** — your current files are zipped before any restore
-- **Game auto-detection** — finds ~18 common games' save folders on your OS
-- **Cross-machine** — paths are stored portably, so a Windows profile resolves on Linux
-- **Private by default** — the repo is created private; the token lives in your OS keychain
-- **No `git` required** — commits are made through the GitHub API
+- **Automatic scheduled backups**: per game, from every 5 minutes to daily
+- **Full version history**: every backup is a commit; restore any previous one
+- **Genuinely incremental**: unchanged saves upload nothing and create no commit
+- **Restore with a safety net**: your current files are zipped before any restore
+- **Game auto-detection**: finds ~18 common games' save folders on your OS
+- **Cross-machine**: paths are stored portably, so a Windows profile resolves on Linux
+- **Private by default**: the repo is created private; the token lives in your OS keychain
+- **No `git` required**: commits are made through the GitHub API
 
 ---
 
@@ -83,7 +83,7 @@ On Windows use `.venv\Scripts\pip` and `.venv\Scripts\gamesave-sync`.
 ### 2. Connect your GitHub account
 
 On first launch the app asks for a **personal access token**. There's a button
-that opens the GitHub page with the right scope pre-selected — or go to
+that opens the GitHub page with the right scope pre-selected, or go to
 [github.com/settings/tokens/new](https://github.com/settings/tokens/new?scopes=repo&description=GameSave%20Sync)
 and create one with the **`repo`** scope.
 
@@ -147,7 +147,7 @@ Branches were considered and rejected:
   so **per-game history is free** without splitting the repo.
 - Branches would need a separate ref update per game, and restoring on a new
   machine would mean discovering which branches exist first.
-- Git deduplicates by content hash regardless of branch — branches save no space.
+- Git deduplicates by content hash regardless of branch, branches save no space.
 - One `git log` shows everything you backed up today, across every game.
 
 Since it's an ordinary repo, you can always recover by hand without this app:
@@ -173,7 +173,7 @@ still resolves on Linux. Supported tokens include `{HOME}`, `{APPDATA}`,
 | What | Location |
 |---|---|
 | Config (games, intervals) | `~/.config/gamesave-sync/config.json`<sup>*</sup> |
-| GitHub token | OS keychain (falls back to a `0600` file — the app tells you if so) |
+| GitHub token | OS keychain (falls back to a `0600` file, the app tells you if so) |
 | Pre-restore safety zips | `~/.local/share/gamesave-sync/pre-restore/`<sup>*</sup> |
 
 <sup>*</sup> Platform-appropriate equivalents on Windows and macOS.
@@ -199,7 +199,7 @@ Found a vulnerability? See [SECURITY.md](SECURITY.md).
 Worth knowing before you rely on this:
 
 - **Backups only run while the app is open.** There is no background service or
-  autostart integration yet — see [#1](../../issues).
+  autostart integration yet, see [#1](../../issues).
 - **Close the game before restoring**, for the reason described above.
 - **Locked files are skipped** with a warning rather than failing the backup.
   Some games hold saves open while running.
@@ -212,10 +212,10 @@ Worth knowing before you rely on this:
 Auto-detection knows Hollow Knight, Stardew Valley, Terraria, Minecraft (Java),
 Factorio, RimWorld, The Binding of Isaac: Repentance, Dwarf Fortress, Kerbal
 Space Program, Balatro, Elden Ring, Dark Souls III, Cyberpunk 2077, Baldur's
-Gate 3, Valheim, Nier: Automata, Slay the Spire and Risk of Rain 2 — including
+Gate 3, Valheim, Nier: Automata, Slay the Spire and Risk of Rain 2, including
 Steam Proton prefixes on Linux.
 
-**Any game works** — detection is only a shortcut. Point it at a folder and it
+**Any game works**, detection is only a shortcut. Point it at a folder and it
 backs it up. Adding a preset is a one-entry change in
 [`gamesync/presets.py`](gamesync/presets.py); PRs welcome.
 
@@ -266,7 +266,7 @@ CI builds all three platforms on every tag push. See
 
 ## Contributing
 
-Contributions are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md). Adding a game
+Contributions are welcome, see [CONTRIBUTING.md](CONTRIBUTING.md). Adding a game
 preset is the easiest place to start. Please also read the
 [Code of Conduct](CODE_OF_CONDUCT.md).
 

@@ -20,11 +20,11 @@ First release.
 - Automatic creation of a **private** saves repository on the user's account.
 - Per-game backup profiles: multiple file/folder sources, glob exclusions, and
   schedules from every 5 minutes to daily.
-- Scheduled and manual backups, committed through the GitHub git data API — no
+- Scheduled and manual backups, committed through the GitHub git data API, no
   local clone and no `git` binary required.
 - Incremental uploads: git blob SHAs are computed locally and diffed against the
   remote tree, so unchanged saves upload nothing and create no commit.
-- Deletion propagation — files removed on disk are removed from the tree in the
+- Deletion propagation: files removed on disk are removed from the tree in the
   same commit.
 - Backup history browser and restore of any previous commit, with the current
   files zipped to a pre-restore folder first.

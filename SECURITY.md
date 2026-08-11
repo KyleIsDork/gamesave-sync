@@ -2,7 +2,7 @@
 
 ## Supported versions
 
-The latest release is supported. This is a small project — fixes go into the
+The latest release is supported. This is a small project, fixes go into the
 next release rather than being backported.
 
 ## Reporting a vulnerability
@@ -14,7 +14,7 @@ Report it privately via GitHub's
 (Security tab → Report a vulnerability).
 
 Include what you can: affected version, OS, reproduction steps, and impact.
-Expect an initial response within about a week — this is maintained in spare
+Expect an initial response within about a week, this is maintained in spare
 time, not by a security team.
 
 ## Scope

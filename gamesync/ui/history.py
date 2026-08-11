@@ -31,7 +31,7 @@ class HistoryDialog(QDialog):
     def __init__(self, profile: GameProfile, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.profile = profile
-        self.setWindowTitle(f"History — {profile.name}")
+        self.setWindowTitle(f"History: {profile.name}")
         self.setMinimumSize(620, 520)
         self._build()
 

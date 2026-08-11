@@ -97,7 +97,7 @@ def collect(profile: GameProfile) -> Snapshot:
 
             if size > MAX_FILE_BYTES:
                 warnings.append(
-                    f"Skipped {rel} — {size // (1024 * 1024)} MB is over the "
+                    f"Skipped {rel}: {size // (1024 * 1024)} MB is over the "
                     f"{MAX_FILE_BYTES // (1024 * 1024)} MB per-file limit."
                 )
                 continue
@@ -126,7 +126,7 @@ def collect(profile: GameProfile) -> Snapshot:
     if snapshot.total_bytes > WARN_TOTAL_BYTES:
         warnings.append(
             f"This game's saves total {snapshot.total_bytes // (1024 * 1024)} MB. "
-            "Large repos sync slowly — consider excluding screenshots or video."
+            "Large repos sync slowly, consider excluding screenshots or video."
         )
     return snapshot
 

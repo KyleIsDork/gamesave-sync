@@ -38,7 +38,7 @@ else:
 
 
 a = Analysis(
-    # Not gamesync/__main__.py — PyInstaller runs the script without a parent
+    # Not gamesync/__main__.py: PyInstaller runs the script without a parent
     # package, which breaks its relative imports. See packaging/entrypoint.py.
     [str(ROOT / "packaging" / "entrypoint.py")],
     pathex=[str(ROOT)],

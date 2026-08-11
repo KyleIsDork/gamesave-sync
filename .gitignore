@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------
-# Secrets and credentials — never commit these.
+# Secrets and credentials, never commit these.
 # The app itself stores its GitHub token in the OS keychain, or (when no
 # keychain is available) in a 0600 file in the user's *config* directory, not
 # in the project. These patterns are belt-and-braces.
@@ -90,7 +90,7 @@ linuxdeploy*.AppImage
 !packaging/**/*.exe
 
 # ---------------------------------------------------------------------------
-# Agent / AI tooling scratch — keep assistant workspaces out of the repo
+# Agent / AI tooling scratch, keeps assistant workspaces out of the repo
 # ---------------------------------------------------------------------------
 .claude/
 .claude*/

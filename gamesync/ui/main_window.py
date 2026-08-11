@@ -75,7 +75,7 @@ class MainWindow(QMainWindow):
 
         if not token_storage_is_secure() and self.client:
             self.log_activity(
-                "Token stored in a file — no system keychain was available.", "warn"
+                "Token stored in a file, no system keychain was available.", "warn"
             )
 
         if self.config.backup_on_launch and self.client:
@@ -416,7 +416,7 @@ class MainWindow(QMainWindow):
         self.refresh_games()
         self._schedule_next(profile, first=True)
         self.log_activity(f"Added {profile.name}.", "success")
-        self.show_toast(f"{profile.name} added — running the first backup.", "success")
+        self.show_toast(f"{profile.name} added, running the first backup.", "success")
         self.backup_game(profile.slug)
 
     def edit_game(self, slug: str) -> None:
@@ -438,7 +438,7 @@ class MainWindow(QMainWindow):
         confirm.setWindowTitle("Remove game?")
         confirm.setText(f"Stop backing up {profile.name}?")
         confirm.setInformativeText(
-            "Your existing backups stay in the GitHub repo — this only removes "
+            "Your existing backups stay in the GitHub repo, this only removes "
             "the game from this app."
         )
         confirm.setIcon(QMessageBox.Icon.Question)
@@ -573,7 +573,7 @@ class MainWindow(QMainWindow):
             if result.changed:
                 self.log_activity(f"{name}: {result.message}", "success")
                 if not job.meta.get("silent"):
-                    self.show_toast(f"{name} — {result.message}", "success")
+                    self.show_toast(f"{name}: {result.message}", "success")
             else:
                 self.log_activity(f"{name}: no changes.")
             for warning in result.warnings:
@@ -583,7 +583,7 @@ class MainWindow(QMainWindow):
             name = profile.name if profile else job.slug
             message = f"Restored {plural(result.files_written, 'file')}"
             if result.safety_archive:
-                message += f" — previous files zipped to {result.safety_archive.name}"
+                message += f", previous files zipped to {result.safety_archive.name}"
             self.log_activity(f"{name}: {message}", "success")
             self.show_toast(f"{name} restored.", "success")
             for warning in result.warnings:
@@ -614,7 +614,7 @@ class MainWindow(QMainWindow):
         name = profile.name if profile else job.label
         self.log_activity(f"{name}: {message}", "danger")
         if not job.meta.get("silent"):
-            self.show_toast(f"{name} — {message}", "danger", msec=7000)
+            self.show_toast(f"{name}: {message}", "danger", msec=7000)
         self._update_sync_status()
 
     # ---- scheduler -------------------------------------------------------
