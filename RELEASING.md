@@ -56,6 +56,20 @@ Check the artifacts:
 
 ## 4. Tag
 
+**Tag a commit that is on `main`, not one sitting on a branch.** Tagging a
+branch commit still produces a correct release, but `main` is then left
+claiming the old version, and the next branch cut from it starts out wrong.
+
+Check first:
+
+```bash
+git fetch origin
+git merge-base --is-ancestor HEAD origin/main && echo "on main, safe to tag" \
+  || echo "NOT on main, merge the version bump PR first"
+```
+
+Then:
+
 ```bash
 git tag -a vX.Y.Z -m "GameSave Sync X.Y.Z"
 git push origin vX.Y.Z
@@ -64,7 +78,25 @@ git push origin vX.Y.Z
 This rebuilds everything and opens a **draft** release with the artifacts
 attached.
 
-## 5. Publish
+## 5. Check the right files
+
+Dry-run artifacts and release assets look similar and are easy to confuse:
+
+| Source | Filenames | Built from |
+|---|---|---|
+| Release assets (what ships) | `GameSave-Sync-X.Y.Z-x86_64.AppImage` | the tag |
+| Dry-run artifacts | `linux-appimage.zip`, `windows-build.zip` | whatever branch you dispatched |
+
+If a downloaded file is named `linux-appimage.zip`, it is a **dry-run artifact
+wrapped by GitHub**, not a release asset, and it carries the version of the
+branch it was built from. To review what will actually ship:
+
+```bash
+gh release download vX.Y.Z -D /tmp/review
+ls /tmp/review    # every name should contain X.Y.Z
+```
+
+## 6. Publish
 
 Review the draft at
 [releases](https://github.com/KyleIsDork/gamesave-sync/releases), edit the notes

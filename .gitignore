@@ -89,6 +89,11 @@ linuxdeploy*.AppImage
 *.exe
 !packaging/**/*.exe
 
+# Release artifacts downloaded for local review
+binaries/
+artifacts/
+dryrun/
+
 # ---------------------------------------------------------------------------
 # Agent / AI tooling scratch, keeps assistant workspaces out of the repo
 # ---------------------------------------------------------------------------
