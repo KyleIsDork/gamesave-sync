@@ -13,7 +13,7 @@ permissions:
 jobs:
   linux:
     name: Linux (AppImage)
-    # Built on the oldest supported glibc — an AppImage built on a newer distro
+    # Built on the oldest supported glibc, an AppImage built on a newer distro
     # will refuse to start on older ones.
     runs-on: ubuntu-22.04
     steps:
@@ -150,9 +150,9 @@ jobs:
 
             | Platform | File |
             |---|---|
-            | Linux | `*.AppImage` — `chmod +x` then run |
-            | Windows | `*-windows-x64.zip` — unzip, run `GameSave Sync.exe` |
-            | macOS | `*-macos-*.zip` — unzip, drag to Applications |
+            | Linux | `*.AppImage`, `chmod +x` then run |
+            | Windows | `*-windows-x64.zip`, unzip and run `GameSave Sync.exe` |
+            | macOS | `*-macos-*.zip`, unzip and drag to Applications |
 
             > Builds are **not code-signed**. On macOS, right-click → Open on
             > first launch, or run

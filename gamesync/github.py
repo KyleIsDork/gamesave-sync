@@ -38,7 +38,7 @@ def git_blob_sha(data: bytes) -> str:
     """The SHA-1 git itself would give this content.
 
     Computing it locally means we can diff against the remote tree and skip
-    uploading anything unchanged — usually that makes a backup zero uploads.
+    uploading anything unchanged, usually that makes a backup zero uploads.
     """
     h = hashlib.sha1()
     h.update(b"blob %d\0" % len(data))

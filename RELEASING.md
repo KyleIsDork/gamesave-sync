@@ -5,7 +5,7 @@ draft, publish.
 
 ## 1. Bump the version
 
-Three files, and they must agree — the tag, the app's Settings screen and the
+Three files, and they must agree, the tag, the app's Settings screen and the
 macOS bundle metadata all come from them:
 
 | File | What to change |
@@ -34,7 +34,7 @@ QT_QPA_PLATFORM=offscreen .venv/bin/python packaging/make_icon.py
 
 Merge the version bump to `main`, then trigger the release workflow **manually**.
 A manual run builds every platform and uploads the artifacts, but skips
-publishing — the publish job only runs for a `v*` tag.
+publishing, the publish job only runs for a `v*` tag.
 
 ```bash
 gh workflow run release.yml --ref main
@@ -44,14 +44,14 @@ gh run download "$(gh run list --workflow=release.yml --limit 1 --json databaseI
 
 Check the artifacts:
 
-- **Linux** — launch it and confirm it stays up:
+- **Linux**: launch it and confirm it stays up:
   ```bash
   chmod +x /tmp/dryrun/*.AppImage
   QT_QPA_PLATFORM=offscreen /tmp/dryrun/*.AppImage &
   sleep 15 && kill -0 $! && echo "still running" && kill $!
   ```
-- **Windows** — the zip contains `GameSave Sync.exe` and an `_internal` folder.
-- **macOS** — both `arm64` and `x86_64` zips exist and contain
+- **Windows**: the zip contains `GameSave Sync.exe` and an `_internal` folder.
+- **macOS**: both `arm64` and `x86_64` zips exist and contain
   `GameSave Sync.app/Contents/MacOS/`.
 
 ## 4. Tag
@@ -68,7 +68,7 @@ attached.
 
 Review the draft at
 [releases](https://github.com/KyleIsDork/gamesave-sync/releases), edit the notes
-if needed, then publish. Publishing is deliberately manual — the workflow never
+if needed, then publish. Publishing is deliberately manual, the workflow never
 ships to users unattended.
 
 ## If something goes wrong
@@ -90,9 +90,9 @@ permissions → Read and write*, then re-run the failed job. No re-tagging neede
 
 `release.yml` pins runner images deliberately:
 
-- **`ubuntu-22.04`** for the AppImage — build on the oldest glibc you intend to
+- **`ubuntu-22.04`** for the AppImage, build on the oldest glibc you intend to
   support, or the result will not start on older distros.
-- **`macos-15` / `macos-15-intel`** — GitHub retires macOS images regularly
+- **`macos-15` / `macos-15-intel`**: GitHub retires macOS images regularly
   (`macos-13` is gone, `macos-14` is deprecated). If a run fails with "no runner
   matching the labels", check the current list at
   [actions/runner-images](https://github.com/actions/runner-images#available-images).

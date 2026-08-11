@@ -61,7 +61,7 @@ Guidelines:
 - Match the surrounding style: type hints, `from __future__ import annotations`,
   and comments that explain *why* rather than restating the code.
 - Add or update tests when you change behaviour. The sync engine is tested
-  against an in-memory fake of the GitHub git API (`tests/test_sync.py`) — no
+  against an in-memory fake of the GitHub git API (`tests/test_sync.py`), no
   network access, so tests stay fast and hermetic.
 - Update `CHANGELOG.md` under `[Unreleased]`.
 

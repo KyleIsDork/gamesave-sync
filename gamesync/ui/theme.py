@@ -90,7 +90,7 @@ def _icon_url(name: str, svg: str) -> str:
     """Write an SVG to the app data dir once and return its path for url().
 
     Qt stylesheets cannot draw a glyph, do not accept data: URIs, and ignore
-    the CSS border-triangle trick — an arrow or tick has to be a real image.
+    the CSS border-triangle trick, an arrow or tick has to be a real image.
     If the SVG image plugin is missing, callers fall back to no image.
     """
     if name in _icon_cache:

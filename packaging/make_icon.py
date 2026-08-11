@@ -92,7 +92,7 @@ def render(size: int) -> QImage:
 
     # Cut the shutter and label back out by refilling them with the *same*
     # gradient brush. Because the gradient is defined over the whole image,
-    # this reproduces the background exactly at those positions — cleaner than
+    # this reproduces the background exactly at those positions, cleaner than
     # a composition mode, which would punch through the background too.
     shutter = QPainterPath()
     shutter.addRoundedRect(QRectF(98 * s, 58 * s, 54 * s, 48 * s), 4 * s, 4 * s)
@@ -130,7 +130,7 @@ def main() -> int:
     # Canonical icon used by the README, the .desktop entry and the AppImage.
     images[256].save(str(assets / "icon.png"))
 
-    # Windows .ico — Qt writes a multi-size ICO from the largest image it gets,
+    # Windows .ico, Qt writes a multi-size ICO from the largest image it gets,
     # so write the 256px one and let Qt downscale.
     images[256].save(str(assets / "icon.ico"))
 

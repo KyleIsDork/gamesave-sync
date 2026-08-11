@@ -33,7 +33,7 @@ class ConnectDialog(QDialog):
         super().__init__(parent)
         self.config = config
         self.client: GitHubClient | None = None
-        self.setWindowTitle(f"Connect to GitHub — {APP_NAME}")
+        self.setWindowTitle(f"Connect to GitHub ({APP_NAME})")
         self.setMinimumWidth(520)
         self._build()
 
@@ -188,6 +188,6 @@ class ConnectDialog(QDialog):
         if token_storage_is_secure():
             return ""
         return (
-            "Your token is stored in a file rather than the system keychain — "
+            "Your token is stored in a file rather than the system keychain, "
             "no keyring backend was available."
         )
