@@ -1,0 +1,34 @@
+name: Add a game preset
+description: Add a game to auto-detection
+labels: ["preset"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        You can also open a PR directly — it's a one-entry change in
+        `gamesync/presets.py`. See CONTRIBUTING.md.
+  - type: input
+    id: game
+    attributes:
+      label: Game name
+    validations:
+      required: true
+  - type: textarea
+    id: paths
+    attributes:
+      label: Save location(s)
+      description: |
+        Use path tokens where you can, e.g. `{APPDATA}/YourGame/Saves`.
+        Give the narrowest folder that contains the saves.
+      render: text
+    validations:
+      required: true
+  - type: checkboxes
+    id: verified
+    attributes:
+      label: Which platforms have you verified this on?
+      options:
+        - label: Windows
+        - label: macOS
+        - label: Linux (native)
+        - label: Linux (Steam Proton)
