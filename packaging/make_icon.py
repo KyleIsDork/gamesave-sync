@@ -10,6 +10,7 @@ Produces PNGs at the sizes AppImage, Windows and macOS want, plus a .ico.
 
 from __future__ import annotations
 
+import struct
 import sys
 from pathlib import Path
 
@@ -22,6 +23,35 @@ ACCENT_BOTTOM = "#4f46e5"
 FOREGROUND = "#ffffff"
 
 SIZES = [16, 32, 48, 64, 128, 256, 512]
+
+# ICNS chunk type per pixel size. These are the PNG-based types, which every
+# macOS version PyInstaller targets can read.
+ICNS_TYPES = {
+    16: b"icp4",
+    32: b"icp5",
+    64: b"icp6",
+    128: b"ic07",
+    256: b"ic08",
+    512: b"ic09",
+}
+
+
+def write_icns(pngs: dict[int, bytes], path: Path) -> None:
+    """Pack PNGs into an .icns bundle.
+
+    The format is a plain container: the magic ``icns``, a big-endian total
+    length, then ``(4-byte type, 4-byte length-including-header, data)`` chunks.
+    Writing it directly keeps icon generation working on Linux, where macOS's
+    ``iconutil`` does not exist.
+    """
+    chunks = b""
+    for size, chunk_type in sorted(ICNS_TYPES.items()):
+        data = pngs.get(size)
+        if data is None:
+            continue
+        chunks += chunk_type + struct.pack(">I", len(data) + 8) + data
+
+    path.write_bytes(b"icns" + struct.pack(">I", len(chunks) + 8) + chunks)
 
 
 def render(size: int) -> QImage:
@@ -104,7 +134,17 @@ def main() -> int:
     # so write the 256px one and let Qt downscale.
     images[256].save(str(assets / "icon.ico"))
 
-    print(f"wrote {len(SIZES) + 2} files to {assets}")
+    # macOS .icns, assembled from the PNGs already on disk.
+    write_icns(
+        {
+            size: (assets / f"icon-{size}.png").read_bytes()
+            for size in ICNS_TYPES
+            if (assets / f"icon-{size}.png").exists()
+        },
+        assets / "icon.icns",
+    )
+
+    print(f"wrote {len(SIZES) + 3} files to {assets}")
     return 0
 
 

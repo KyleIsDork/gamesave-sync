@@ -9,12 +9,20 @@ Produces a one-folder bundle in dist/. The AppImage script wraps that folder
 into an AppDir; the Windows and macOS jobs zip it as-is.
 """
 
+import re
 import sys
 from pathlib import Path
 
 # SPECPATH is injected by PyInstaller and points at this file's directory.
 ROOT = Path(SPECPATH).parent
 ICON_DIR = ROOT / "assets"
+
+# Read the version from the package rather than repeating it here, so a bump in
+# one place cannot silently ship a stale CFBundleVersion. Parsed rather than
+# imported: importing would pull PySide6 into the spec's own interpreter.
+VERSION = re.search(
+    r'VERSION = "([^"]+)"', (ROOT / "gamesync" / "__init__.py").read_text()
+).group(1)
 
 IS_WINDOWS = sys.platform == "win32"
 IS_MACOS = sys.platform == "darwin"
@@ -114,8 +122,8 @@ if IS_MACOS:
         icon=icon,
         bundle_identifier="io.github.kyleisdork.gamesavesync",
         info_plist={
-            "CFBundleShortVersionString": "0.1.0",
-            "CFBundleVersion": "0.1.0",
+            "CFBundleShortVersionString": VERSION,
+            "CFBundleVersion": VERSION,
             "NSHighResolutionCapable": True,
             "LSApplicationCategoryType": "public.app-category.utilities",
             "LSMinimumSystemVersion": "11.0",

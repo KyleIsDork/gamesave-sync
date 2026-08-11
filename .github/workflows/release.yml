@@ -3,11 +3,9 @@ name: Release
 on:
   push:
     tags: ["v*"]
+  # Manual runs are the dry-run path: every platform builds and uploads its
+  # artifact, but the publish job is gated on a v* tag and so is skipped.
   workflow_dispatch:
-    inputs:
-      tag:
-        description: "Tag to build (e.g. v0.1.0). Builds artifacts without publishing a release."
-        required: false
 
 permissions:
   contents: write
@@ -91,9 +89,11 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - runner: macos-14      # Apple Silicon
+          - runner: macos-15          # Apple Silicon
             arch: arm64
-          - runner: macos-13      # Intel
+          # macos-13 was retired and macos-14 is deprecated; macos-15-intel is
+          # GitHub's current label for an Intel macOS image.
+          - runner: macos-15-intel    # Intel
             arch: x86_64
     steps:
       - uses: actions/checkout@v7

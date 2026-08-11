@@ -54,9 +54,12 @@ Download the build for your OS from the [latest release](../../releases/latest):
 
 | Platform | File | How to run |
 |---|---|---|
-| **Linux** | `GameSave-Sync-x86_64.AppImage` | `chmod +x` it, then double-click or run it |
-| **Windows** | `GameSave-Sync-windows.zip` | Unzip, run `GameSave Sync.exe` |
-| **macOS** | `GameSave-Sync-macos.zip` | Unzip, drag to Applications |
+| **Linux** | `…-x86_64.AppImage` | `chmod +x` it, then double-click or run it |
+| **Windows** | `…-windows-x64.zip` | Unzip, run `GameSave Sync.exe` |
+| **macOS** (Apple Silicon) | `…-macos-arm64.zip` | Unzip, drag to Applications |
+| **macOS** (Intel) | `…-macos-x86_64.zip` | Unzip, drag to Applications |
+
+Each filename also carries the version, e.g. `GameSave-Sync-0.1.0-x86_64.AppImage`.
 
 <details>
 <summary>Or run from source</summary>
