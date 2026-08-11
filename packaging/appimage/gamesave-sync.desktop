@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=GameSave Sync
+GenericName=Game Save Backup
+Comment=Back up game saves to a private GitHub repository
+Exec=gamesave-sync
+Icon=gamesave-sync
+Categories=Utility;Game;
+Keywords=game;save;backup;sync;github;cloud;
+Terminal=false
+StartupWMClass=GameSave Sync
