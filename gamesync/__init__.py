@@ -2,4 +2,4 @@
 
 APP_NAME = "GameSave Sync"
 APP_SLUG = "gamesave-sync"
-VERSION = "0.1.1"
+VERSION = "0.1.2"
