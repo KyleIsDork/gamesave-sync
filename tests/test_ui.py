@@ -186,6 +186,45 @@ def test_page_switch_syncs_sidebar_highlight(window):
     assert window.nav_group.button(2).isChecked()
 
 
+def test_history_dialog_emits_the_publish_choice(qapp, populated_config, monkeypatch):
+    from PySide6.QtWidgets import QMessageBox
+
+    from gamesync.github import CommitInfo
+    from gamesync.ui.history import HistoryDialog
+
+    # The confirmation is modal; answering Ok is what a user clicking through does.
+    monkeypatch.setattr(
+        QMessageBox, "exec", lambda self: QMessageBox.StandardButton.Ok
+    )
+
+    dialog = HistoryDialog(populated_config.games[0])
+    dialog.set_commits(
+        [
+            CommitInfo(
+                sha="abc1234",
+                message="Hollow Knight: backup (1 changed)",
+                date="2026-08-11T12:00:00Z",
+                author="tester",
+            )
+        ]
+    )
+    dialog.listing.setCurrentRow(0)
+
+    seen: list[tuple[str, bool]] = []
+    dialog.restore_requested.connect(lambda sha, publish: seen.append((sha, publish)))
+
+    assert dialog.publish_check.isChecked()  # publishing is the default
+    dialog._restore()
+    assert seen == [("abc1234", True)]
+
+    seen.clear()
+    dialog.publish_check.setChecked(False)
+    dialog._restore()
+    assert seen == [("abc1234", False)]
+
+    dialog.deleteLater()
+
+
 @pytest.mark.parametrize("theme", ["dark", "light"])
 def test_stylesheet_builds_for_both_themes(qapp, theme):
     sheet = stylesheet(theme)
