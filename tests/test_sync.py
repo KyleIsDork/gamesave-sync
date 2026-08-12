@@ -117,6 +117,117 @@ def test_restore_writes_a_safety_archive_first(
         assert zf.read("data/saves/slot1.dat") == b"CORRUPTED"
 
 
+def test_restore_can_publish_itself_as_the_newest_backup(
+    engine, fake_github, profile, save_dir, isolated_dirs
+):
+    engine.backup(profile)
+    original = engine.history(profile)[0].sha
+
+    (save_dir / "slot1.dat").write_bytes(b"CORRUPTED")
+    engine.backup(profile)
+    corrupt_head = fake_github.refs["main"]
+
+    result = engine.restore(profile, original, publish=True)
+
+    assert result.published_commit_sha is not None
+    assert fake_github.refs["main"] != corrupt_head
+    assert fake_github.refs["main"] == result.published_commit_sha
+    # The newest backup now holds the restored bytes, not the corrupted ones.
+    tree = fake_github.head_tree()
+    assert (
+        fake_github.blobs[tree["games/my-game/data/saves/slot1.dat"]] == b"first save"
+    )
+    assert profile.last_commit_sha == result.published_commit_sha
+
+
+def test_published_restore_commit_says_what_it_restored(
+    engine, fake_github, profile, save_dir, isolated_dirs
+):
+    engine.backup(profile)
+    original = engine.history(profile)[0].sha
+    (save_dir / "slot1.dat").write_bytes(b"CORRUPTED")
+    engine.backup(profile)
+
+    engine.restore(profile, original, publish=True)
+
+    assert engine.history(profile)[0].message.startswith(
+        f"My Game: restored backup {original[:7]}"
+    )
+
+
+def test_restore_without_publish_leaves_the_branch_alone(
+    engine, fake_github, profile, save_dir, isolated_dirs
+):
+    engine.backup(profile)
+    original = engine.history(profile)[0].sha
+    (save_dir / "slot1.dat").write_bytes(b"CORRUPTED")
+    engine.backup(profile)
+    head_before = fake_github.refs["main"]
+
+    result = engine.restore(profile, original, publish=False)
+
+    assert result.published_commit_sha is None
+    assert not result.published_message
+    assert fake_github.refs["main"] == head_before
+
+
+def test_publishing_an_unchanged_restore_makes_no_commit(
+    engine, fake_github, profile, isolated_dirs
+):
+    """Restoring the backup you are already on should not commit anything."""
+    engine.backup(profile)
+    head_before = fake_github.refs["main"]
+
+    result = engine.restore(profile, head_before, publish=True)
+
+    assert result.published_commit_sha is None
+    assert "already the newest backup" in result.published_message
+    assert fake_github.refs["main"] == head_before
+
+
+def test_a_failed_upload_does_not_fail_the_restore(
+    engine, fake_github, profile, save_dir, isolated_dirs
+):
+    engine.backup(profile)
+    original = engine.history(profile)[0].sha
+    (save_dir / "slot1.dat").write_bytes(b"CORRUPTED")
+    engine.backup(profile)
+
+    def refuse(owner, repo, branch, sha, force=False):
+        raise GitHubError("upstream is on fire", 500)
+
+    fake_github.update_ref = refuse
+
+    result = engine.restore(profile, original, publish=True)
+
+    assert result.files_written == 3
+    assert (save_dir / "slot1.dat").read_bytes() == b"first save"
+    assert result.published_commit_sha is None
+    assert any("uploading them failed" in w for w in result.warnings)
+
+
+def test_restore_aborts_when_the_safety_copy_cannot_be_written(
+    engine, profile, save_dir, isolated_dirs, monkeypatch
+):
+    """Overwriting saves with no recoverable copy is never acceptable."""
+    engine.backup(profile)
+    original = engine.history(profile)[0].sha
+    (save_dir / "slot1.dat").write_bytes(b"CORRUPTED")
+
+    import gamesync.sync as sync
+
+    def unwritable():
+        raise OSError("no space left on device")
+
+    monkeypatch.setattr(sync, "safety_dir", unwritable)
+
+    with pytest.raises(GitHubError, match="Could not save a copy"):
+        engine.restore(profile, original, make_safety_copy=True)
+
+    # The corrupted file is still there: nothing was overwritten.
+    assert (save_dir / "slot1.dat").read_bytes() == b"CORRUPTED"
+
+
 def test_single_file_source_round_trips(fake_github, config, tmp_path, isolated_dirs):
     target = tmp_path / "OtherGame" / "profile.sav"
     target.parent.mkdir(parents=True)
