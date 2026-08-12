@@ -545,7 +545,7 @@ class MainWindow(QMainWindow):
         dialog.setStyleSheet(stylesheet(self.config.theme))
         dialog.set_loading(True)
         dialog.restore_requested.connect(
-            lambda sha, safety, s=slug: self.restore_game(s, sha, safety)
+            lambda sha, publish, s=slug: self.restore_game(s, sha, publish)
         )
         self._open_history = dialog
 
@@ -558,14 +558,14 @@ class MainWindow(QMainWindow):
         dialog.exec()
         self._open_history = None
 
-    def restore_game(self, slug: str, commit_sha: str, safety: bool) -> None:
+    def restore_game(self, slug: str, commit_sha: str, publish: bool) -> None:
         profile = self.config.game_by_slug(slug)
         if not profile or not self.engine:
             return
 
         def run(report, _profile=profile):
             return self.engine.restore(
-                _profile, commit_sha, progress=report, make_safety_copy=safety
+                _profile, commit_sha, progress=report, publish=publish
             )
 
         job = Job(kind="restore", label=f"Restoring {profile.name}", fn=run, slug=slug)
@@ -620,7 +620,18 @@ class MainWindow(QMainWindow):
             if result.safety_archive:
                 message += f", previous files zipped to {result.safety_archive.name}"
             self.log_activity(f"{name}: {message}", "success")
-            self.show_toast(f"{name} restored.", "success")
+
+            if result.published_commit_sha and profile:
+                # Publishing committed on the profile's behalf, so the card and
+                # the next scheduled run need to know about it.
+                self._save()
+                card and card.update_profile(profile)
+                self._schedule_next(profile)
+            if result.published_message:
+                self.log_activity(f"{name}: {result.published_message}", "success")
+                self.show_toast(f"{name} restored and uploaded.", "success")
+            else:
+                self.show_toast(f"{name} restored.", "success")
             for warning in result.warnings:
                 self.log_activity(f"{name}: {warning}", "warn")
 

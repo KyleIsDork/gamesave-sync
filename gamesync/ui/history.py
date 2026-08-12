@@ -26,7 +26,7 @@ class HistoryDialog(QDialog):
     """Lists commits touching this game. Restore is delegated to the caller so
     it runs on the shared worker queue rather than blocking the dialog."""
 
-    restore_requested = Signal(str, bool)  # commit sha, make_safety_copy
+    restore_requested = Signal(str, bool)  # commit sha, publish_after_restore
 
     def __init__(self, profile: GameProfile, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -66,11 +66,30 @@ class HistoryDialog(QDialog):
         self.listing.itemDoubleClicked.connect(lambda _: self._restore())
         root.addWidget(self.listing, 1)
 
-        self.safety_check = QCheckBox(
-            "Save a zip of my current files first (recommended)"
+        self.publish_check = QCheckBox("Make this the newest backup on GitHub")
+        self.publish_check.setChecked(True)
+        self.publish_check.setToolTip(
+            "Uploads the restored files straight after restoring them, so your "
+            "other machines pull this save instead of pushing the one you just "
+            "rolled back from."
         )
-        self.safety_check.setChecked(True)
-        root.addWidget(self.safety_check)
+        root.addWidget(self.publish_check)
+
+        publish_hint = QLabel(
+            "Without this, the rollback only applies here until the next "
+            "scheduled backup uploads it."
+        )
+        publish_hint.setObjectName("Hint")
+        publish_hint.setWordWrap(True)
+        root.addWidget(publish_hint)
+
+        safety_hint = QLabel(
+            "Your current files are always zipped to this machine first, so a "
+            "restore you did not mean can be undone."
+        )
+        safety_hint.setObjectName("Hint")
+        safety_hint.setWordWrap(True)
+        root.addWidget(safety_hint)
 
         buttons = QHBoxLayout()
         buttons.addStretch(1)
@@ -135,12 +154,13 @@ class HistoryDialog(QDialog):
             return
         sha = item.data(Qt.ItemDataRole.UserRole)
 
-        safety = self.safety_check.isChecked()
-        detail = (
-            "Your current files will be zipped to the app's data folder first."
-            if safety
-            else "Your current files will be overwritten with no local copy kept."
-        )
+        publish = self.publish_check.isChecked()
+        detail = "Your current files will be zipped to the app's data folder first."
+        if publish:
+            detail += (
+                " The restored files are then uploaded as the newest backup, "
+                "so your other machines get them too."
+            )
         confirm = QMessageBox(self)
         confirm.setWindowTitle("Restore this backup?")
         confirm.setText(
@@ -157,5 +177,5 @@ class HistoryDialog(QDialog):
         if confirm.exec() != QMessageBox.StandardButton.Ok:
             return
 
-        self.restore_requested.emit(sha, safety)
+        self.restore_requested.emit(sha, publish)
         self.accept()

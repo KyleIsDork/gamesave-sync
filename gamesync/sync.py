@@ -58,6 +58,9 @@ class RestoreResult:
     files_skipped: int
     safety_archive: Path | None
     warnings: list[str] = field(default_factory=list)
+    # Set when the restored files were committed back as the newest backup.
+    published_commit_sha: str | None = None
+    published_message: str = ""
 
 
 class SyncEngine:
@@ -123,8 +126,16 @@ class SyncEngine:
         self,
         profile: GameProfile,
         progress: Progress | None = None,
+        *,
+        restored_from: str | None = None,
         _attempt: int = 0,
     ) -> BackupResult:
+        """Commit the current on-disk saves.
+
+        ``restored_from`` only changes the commit message: it marks a commit
+        that came from rolling back to an earlier backup rather than from the
+        game writing new files.
+        """
         def report(pct: int, text: str) -> None:
             if progress:
                 progress(pct, text)
@@ -210,7 +221,9 @@ class SyncEngine:
         new_tree = self.client.create_tree(
             self.owner, self.repo, tree_entries, base_tree=root_tree
         )
-        message = self._commit_message(profile, len(changed), len(removed), only_metadata)
+        message = self._commit_message(
+            profile, len(changed), len(removed), only_metadata, restored_from
+        )
         new_commit = self.client.create_commit(
             self.owner, self.repo, message, new_tree, [head]
         )
@@ -222,7 +235,9 @@ class SyncEngine:
             # against the new head once; a second failure is a real problem.
             if _attempt == 0 and exc.status in (409, 422):
                 report(90, "Another device pushed first, retrying…")
-                return self.backup(profile, progress, _attempt=1)
+                return self.backup(
+                    profile, progress, restored_from=restored_from, _attempt=1
+                )
             raise
 
         report(100, "Done")
@@ -233,6 +248,12 @@ class SyncEngine:
 
         if only_metadata:
             summary = "Saved settings, no save-file changes"
+        elif restored_from:
+            summary = (
+                f"Uploaded the restored save ({len(changed)} "
+                f"file{'s' if len(changed) != 1 else ''},"
+                f" {humanize_bytes(uploaded_bytes)})"
+            )
         elif changed:
             summary = (
                 f"Backed up {len(changed)} file{'s' if len(changed) != 1 else ''}"
@@ -254,11 +275,18 @@ class SyncEngine:
         )
 
     def _commit_message(
-        self, profile: GameProfile, changed: int, removed: int, only_metadata: bool
+        self,
+        profile: GameProfile,
+        changed: int,
+        removed: int,
+        only_metadata: bool,
+        restored_from: str | None = None,
     ) -> str:
         stamp = utc_now().astimezone().strftime("%Y-%m-%d %H:%M")
         host = platform.node() or "unknown-device"
-        if only_metadata:
+        if restored_from:
+            headline = f"{profile.name}: restored backup {restored_from[:7]}"
+        elif only_metadata:
             headline = f"{profile.name}: update profile"
         else:
             bits = []
@@ -317,7 +345,15 @@ class SyncEngine:
         *,
         progress: Progress | None = None,
         make_safety_copy: bool = True,
+        publish: bool = False,
     ) -> RestoreResult:
+        """Write an earlier backup's files back over the current saves.
+
+        With ``publish``, the restored files are then committed as the newest
+        backup, so other machines pull the rollback instead of pushing the save
+        you just rolled back from.
+        """
+
         def report(pct: int, text: str) -> None:
             if progress:
                 progress(pct, text)
@@ -350,9 +386,12 @@ class SyncEngine:
             report(15, "Saving a copy of your current files…")
             archive = self._make_safety_archive(profile)
 
+        # Publishing adds a second phase, so leave it room on the bar.
+        write_end = 70 if publish else 95
+
         written = 0
         for index, (target, blob_sha) in enumerate(planned):
-            pct = 25 + int(70 * (index / max(len(planned), 1)))
+            pct = 25 + int((write_end - 25) * (index / max(len(planned), 1)))
             report(pct, f"Restoring {target.name}…")
             try:
                 data = self.client.get_blob(self.owner, self.repo, blob_sha)
@@ -368,24 +407,86 @@ class SyncEngine:
             except OSError as exc:
                 warnings.append(f"Could not write {target}: {exc}")
 
+        published_sha: str | None = None
+        published_message = ""
+        if publish:
+            published_sha, published_message = self._publish_restored(
+                profile, commit_sha, written, warnings, report, write_end
+            )
+
         report(100, "Done")
         return RestoreResult(
             files_written=written,
             files_skipped=len(blobs) - written,
             safety_archive=archive,
             warnings=warnings,
+            published_commit_sha=published_sha,
+            published_message=published_message,
         )
 
+    def _publish_restored(
+        self,
+        profile: GameProfile,
+        commit_sha: str,
+        written: int,
+        warnings: list[str],
+        report: Progress,
+        write_end: int,
+    ) -> tuple[str | None, str]:
+        """Commit the just-restored files as the newest backup.
+
+        A failure here is reported but does not fail the restore: the files are
+        already back on disk, which is what the user asked for.
+        """
+        if not written:
+            warnings.append("Nothing was written, so nothing was uploaded.")
+            return None, ""
+
+        report(write_end + 2, "Uploading the restored save…")
+
+        def publish_progress(pct: int, text: str) -> None:
+            report(write_end + int((98 - write_end) * pct / 100), text)
+
+        try:
+            pushed = self.backup(
+                profile, publish_progress, restored_from=commit_sha
+            )
+        except GitHubError as exc:
+            warnings.append(
+                f"Files were restored, but uploading them failed: {exc} "
+                "Your next backup will upload them."
+            )
+            return None, ""
+
+        if pushed.changed:
+            return pushed.commit_sha, "This is now the newest backup on GitHub."
+        return None, "This was already the newest backup on GitHub."
+
     def _make_safety_archive(self, profile: GameProfile) -> Path | None:
+        """Zip what is on disk now, before a restore overwrites it.
+
+        Failing to write the archive aborts the restore. Overwriting saves with
+        no copy of what was there is the one outcome this app must not produce,
+        so a full disk or an unwritable data folder has to stop the restore
+        rather than be shrugged off.
+        """
         snapshot: Snapshot = collect(profile)
         if snapshot.is_empty:
+            # Nothing on disk yet, so there is nothing to lose.
             return None
+
         stamp = utc_now().strftime("%Y%m%d-%H%M%S")
-        path = safety_dir() / f"{profile.slug}-{stamp}.zip"
+        path: Path | None = None
         try:
+            path = safety_dir() / f"{profile.slug}-{stamp}.zip"
             with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as zf:
                 for entry in snapshot.files:
                     zf.writestr(entry.repo_path, entry.data)
-        except OSError:
-            return None
+        except OSError as exc:
+            if path is not None:
+                path.unlink(missing_ok=True)
+            raise GitHubError(
+                f"Could not save a copy of your current files: {exc}. "
+                "Nothing was restored."
+            ) from exc
         return path

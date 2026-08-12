@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Restores can upload themselves. "Make this the newest backup on GitHub", on by
+  default in the History dialog, commits the restored files right after they are
+  written to disk. Without it a rollback only existed on one machine until its
+  next scheduled backup, and any other machine could push the save you had just
+  rolled back from. The commit records what it came from,
+  `<game>: restored backup <sha>`.
+
+### Changed
+
+- The pre-restore zip of your current files is no longer optional. The checkbox
+  offering to skip it is gone, because the case for skipping it was thin and the
+  cost of skipping it is an unrecoverable save.
+
+### Fixed
+
+- A pre-restore zip that could not be written was silently ignored, and the
+  restore then overwrote the save files with no copy of them kept anywhere. A
+  failed safety copy now aborts the restore before anything is written.
+
 ## [0.1.1] - 2026-08-11
 
 ### Added
