@@ -38,7 +38,10 @@ Nothing is sent anywhere else.
 - **Automatic scheduled backups**: per game, from every 5 minutes to daily
 - **Full version history**: every backup is a commit; restore any previous one
 - **Genuinely incremental**: unchanged saves upload nothing and create no commit
-- **Restore with a safety net**: your current files are zipped before any restore
+- **Restore with a safety net**: your current files are always zipped before a
+  restore, and a restore that cannot write that zip does not run
+- **Rollbacks that stick**: a restore can upload itself as the newest backup, so
+  every machine ends up on the save you rolled back to
 - **Game auto-detection**: finds ~18 common games' save folders on your OS
 - **Cross-machine**: paths are stored portably, so a Windows profile resolves on Linux
 - **Private by default**: the repo is created private; the token lives in your OS keychain
@@ -104,6 +107,16 @@ you want to confirm what it picked up before saving.
 
 Hit **History** on any game. Every backup is listed with its date. Pick one and
 press **Restore this backup**.
+
+Leave **Make this the newest backup on GitHub** ticked and the restored files are
+uploaded straight after they land on disk, so your other machines pull the
+rolled-back save instead of pushing the one you just rolled back from. Untick it
+to keep the rollback local until the next scheduled backup.
+
+Your current files are always zipped to
+[the pre-restore folder](#where-things-are-stored) first, so a restore you did
+not mean can be undone. If that zip cannot be written, the restore stops rather
+than overwriting anything.
 
 > **Close the game first.** Many games hold their save files open and will write
 > their in-memory state back over your restore when they exit.
