@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-08-11
+
 ### Added
 
 - Restores can upload themselves. "Make this the newest backup on GitHub", on by
@@ -87,6 +89,7 @@ First release.
 - Restore path validation rejecting paths that escape their source root.
 - Failure backoff so a repeatedly failing game does not hammer the API.
 
-[Unreleased]: https://github.com/KyleIsDork/gamesave-sync/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/KyleIsDork/gamesave-sync/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/KyleIsDork/gamesave-sync/releases/tag/v0.1.2
 [0.1.1]: https://github.com/KyleIsDork/gamesave-sync/releases/tag/v0.1.1
 [0.1.0]: https://github.com/KyleIsDork/gamesave-sync/releases/tag/v0.1.0
